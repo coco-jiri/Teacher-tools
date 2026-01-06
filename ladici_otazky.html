@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naladění skupiny</title>
+    <script>
+        const otazky = [
+            {
+                name: "Dnešek",
+                questions: [
+                    "Kdyby dnešní den měl barvu, jaká by to byla?", "Jedno slovo, které vystihuje můj dnešek.", "Co mi dnes udělalo radost?", "Co by si dnes zasloužilo pauzu?", "Na co se tento týden těším?", "Co bych si dnes přál/a víc než obvykle?",  "Co tě dnes ráno cestou do školy jako první zaujalo?", "Co bys dnes vzkázal svému budoucímu já (večer v posteli)?",  "Jakou superschopnost bys dnes na chvíli potřeboval?", "Jedna věc, která tě dnes ráno příjemně překvapila?",  "Na co bys chtěl mít dnes víc odvahy?", "Kdo tě dnes zatím nejvíc potěšil?"
+                ]
+            },
+            {
+                name: "Nálada",
+                questions: [
+                    "Jaká vůně by dnes nejlépe vystihla tvou náladu?",  "Kdyby dnešek byl zvíře, jak by se tvářilo?", "Kdyby byla škola dnes na lodi, jaké by byly vlny?", "Co bys dnes nejraději vymazal z kalendáře?", "Co je pro tebe dnes symbolem pohody?"
+                ]
+            },
+            {
+                name: "Energie",
+                questions: [
+                    "Kdyby tvá energie byla hudební nástroj, co by to bylo?", "V čem se dnes cítíš nejsilnější?","Která barva tě teď v tuhle chvíli nejvíc uklidňuje?"
+                ]
+            },
+            {
+                name: "Představivost",
+                questions: [
+                    "Kdybys mohl mluvit se zvířaty, co by ses jich zeptal?", "Kdyby stromy mohly chodit, kam by se podle tebe vydaly?", "Jak by vypadal svět, kde by se místo mluvení jen kreslilo?", "Kdybys mohl vynalézt nový druh ovoce, jak by chutnalo?", "Jak by vypadala škola na jiné planetě?", "Kdyby lidé měli křídla, kam bys letěl o přestávce?", "Představ si, že jsi kapitánem lodi. Jak by se jmenovala?", "Kdyby se barvy mohly jíst, která by byla nejchutnější?", "Jak by vypadal tvůj den, kdyby trval 48 hodin?", "Kdyby se tvůj stín mohl na hodinu osamostatnit, co by dělal?", "Jaký stroj bys postavil, kdybys měl neomezeně součástek?", "Kdybys mohl vytvořit osmý den v týdnu, jak by se jmenoval?", "Jak by vypadalo tvoje město postavené celé z ledu?", "Kdyby ses mohl stát na jeden den historickou postavou, kým bys byl?", "Co by ti řekl tvůj oblíbený kus oblečení, kdyby ožil?", "Kdybys mohl žít v oblacích, jak by ses tam pohyboval?", "Představ si, že jsi neviditelný. Co bys udělal jako první?", "Kdyby každá tvá myšlenka byla slyšet jako hudba, co by teď hrálo?", "Jak by vypadalo zvíře, které by bylo mixem tvých tří nejoblíbenějších?", "Kdyby byl internet fyzickým místem, jak by vypadalo?"
+                ]
+            },
+            {
+                name: "Dilemata",
+                questions: [
+                    "Být raději nejrychlejším na světě, nebo umět létat? Proč?", "Vždycky mluvit pravdu, nebo už nikdy nemoci promluvit? Proč?", "Mít raději křídla, nebo ploutve a dýchat pod vodou? Proč?", "Mít osobního sluhu, nebo osobního kuchaře? Proč?", "Už nikdy nemuset spát, nebo už nikdy nemuset jíst? Proč?", "Žít v nekonečném létě, nebo v nekonečné zimě? Proč?", "Mít raději fotogenickou paměť, nebo schopnost ovládat čas? Proč?", "Být slavným sportovcem, nebo geniálním vědcem? Proč?", "Bydlet v domě z lega, nebo v domě z čokolády? Proč?", "Vědět vše o minulosti, nebo vidět 5 minut do budoucnosti? Proč?", "Cestovat jen v ponorce, nebo jen v horkovzdušném balónu? Proč?", "Být raději malý jako mravenec, nebo velký jako dům? Proč?", "Mít raději ocas, nebo rohy? Proč?", "Moci mluvit všemi lidskými jazyky, nebo mluvit se zvířaty? Proč?", "Mít robota, co za tebe uklízí, nebo co za tebe píše úkoly? Proč?"
+                ]
+            },
+            {
+                name: "Škola a učení",
+                questions: ["Co by se mělo učit, ale v rozvrhu to není?", "V čem jsi v této třídě největší expert?", "Co ti ve škole dodává nejvíc energie?", "Kdyby se dnes neučilo, co bychom měli dělat?", "Která věc tě ve škole naposledy překvapila?"]
+            },
+            {
+                name: "Já a druzí",
+                questions: ["Čeho si na lidech všimneš jako první?", "Co pro tebe znamená 'opravdové přátelství'?", "Který kompliment tě naposledy potěšil?", "Jaká vlastnost u ostatních tě nejvíc inspiruje?", "V čem jsi dnes jiný než před rokem?"]
+            }
+        ];
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;700;900&display=swap');
+
+        :root {
+            --bg-color: #0c0c0e;
+            --sidebar-color: #16161a;
+            --card-bg: #1f1f23;
+            --card-hover: #2a2a30;
+            --primary: #38bdf8;
+            --primary-muted: #0c4a6e;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --border: #3f3f46;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Lexend', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--sidebar-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .logo { font-weight: 900; color: var(--primary); letter-spacing: -1px; font-size: 1.5rem; }
+        .controls { display: flex; gap: 10px; align-items: center; }
+
+        /* Buttons */
+        button {
+            cursor: pointer;
+            font-family: 'Lexend', sans-serif;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .btn-random { background: var(--card-bg); color: var(--text-main); padding: 0.6rem 1rem; }
+        .btn-random:hover { background: var(--card-hover); }
+
+        .btn-project {
+            background: var(--primary);
+            color: #000;
+            font-weight: 600;
+            padding: 0.6rem 1.5rem;
+            text-transform: uppercase;
+        }
+        .btn-project:disabled { background: #3f3f46; color: #71717a; cursor: not-allowed; }
+
+        /* Main Layout */
+        .layout { display: flex; flex: 1; overflow: hidden; }
+
+        nav {
+            width: 280px;
+            background-color: var(--sidebar-color);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem 1rem;
+            overflow-y: auto;
+        }
+
+        .cat-btn {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            color: var(--text-muted);
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border: none;
+        }
+        .cat-btn.active { background: var(--primary-muted); color: var(--primary); font-weight: 700; }
+
+        main { flex: 1; padding: 2rem; overflow-y: auto; background: linear-gradient(180deg, #111114 0%, #0c0c0e 100%); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 15px;
+            cursor: pointer;
+            line-height: 1.5;
+        }
+        .card:hover { border-color: var(--text-muted); }
+        .card.selected { border-color: var(--primary); background: var(--primary-muted); }
+
+        /* Projection Screen */
+        #projection-screen {
+            position: fixed;
+            inset: 0;
+            background: black;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 5rem;
+            text-align: center;
+        }
+
+        .projection-content { width: 100%; max-width: 1200px; }
+        .p-question { font-weight: 400; margin-bottom: 3rem; line-height: 1.2; }
+        .p-divider { height: 4px; width: 100px; background: #909090; margin: 6rem auto; border-radius: 2px; }
+
+        .close-proj { position: absolute; top: 2rem; right: 2rem; background: transparent; border: none; color: #484848; font-size: 3rem; }
+        .close-proj:hover { color: white; }
+
+        .counter { font-size: 0.8rem; color: var(--text-muted); margin-right: 1rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">SPOLEČNĚ SE LADÍME</div>
+        <div class="controls">
+            <span class="counter" id="counter">Vybráno: 0 / 3</span>
+            <button class="btn-random" onclick="clearSelected()">Zruš výběr</button>
+            <button class="btn-random" onclick="selectRandom()">🎲 Náhodná</button>
+            <button class="btn-project" id="project-btn" onclick="startProjection()" disabled>PROMITAT</button>
+        </div>
+    </header>
+
+    <div class="layout">
+        <nav id="sidebar"></nav>
+        <main>
+            <h2 id="cat-title">Vyberte kategorii</h2>
+            <div class="grid" id="questions-grid"></div>
+        </main>
+    </div>
+
+    <div id="projection-screen">
+        <button class="close-proj" onclick="stopProjection()">&times;</button>
+        <div class="projection-content" id="projection-content"></div>
+    </div>
+
+
+    <script>
+        let selected = [];
+        let currentCat = 0;
+
+        function renderSidebar() {
+            const side = document.getElementById('sidebar');
+
+              while (side.firstChild) {
+                side.removeChild(side.lastChild);
+              }
+
+            otazky.forEach((cat, i) => {
+                const b = document.createElement('button');
+                b.className = `cat-btn ${i === currentCat ? 'active' : ''}`;
+                b.innerText = cat.name;
+                //b.onclick = () => { currentCat = i; renderSidebar(); renderQuestions(); };
+                b.onclick = () => { currentCat = i; renderSidebar(); renderQuestions(); };
+                side.appendChild(b);
+            });
+        }
+
+        function renderQuestions() {
+            const grid = document.getElementById('questions-grid');
+            const title = document.getElementById('cat-title');
+            grid.innerHTML = '';
+            title.innerText = otazky[currentCat].name;
+
+            otazky[currentCat].questions.forEach(q => {
+                const isSel = selected.includes(q);
+                const d = document.createElement('div');
+                d.className = `card ${isSel ? 'selected' : ''}`;
+                d.innerText = q;
+                d.onclick = () => {
+                    if (selected.includes(q)) {
+                        selected = selected.filter(s => s !== q);
+                    } else if (selected.length < 3) {
+                        selected.push(q);
+                    }
+                    updateUI();
+                };
+                grid.appendChild(d);
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('counter').innerText = `Vybráno: ${selected.length} / 3`;
+            document.getElementById('project-btn').disabled = selected.length === 0;
+            renderQuestions();
+        }
+
+        function selectRandom() {
+            const currentQs = otazky[currentCat].questions;
+            const available = currentQs.filter(q => !selected.includes(q));
+            if (available.length > 0 && selected.length < 3) {
+                selected.push(available[Math.floor(Math.random() * available.length)]);
+                updateUI();
+            }
+        }
+
+       function clearSelected() {
+            selected=[];
+            updateUI();
+        }
+
+        function startProjection() {
+            const screen = document.getElementById('projection-screen');
+            const content = document.getElementById('projection-content');
+            content.innerHTML = '';
+            
+            let size = "3.5rem";
+            if (selected.length === 1) size = "5rem";
+            if (selected.length === 2) size = "4rem";
+
+            selected.forEach((q, i) => {
+                const qDiv = document.createElement('div');
+                qDiv.className = 'p-question';
+                qDiv.style.fontSize = size;
+                qDiv.innerText = q;
+                content.appendChild(qDiv);
+                if (i < selected.length - 1) {
+                    const div = document.createElement('div');
+                    div.className = 'p-divider';
+                    content.appendChild(div);
+                }
+            });
+
+            screen.style.display = 'flex';
+            document.documentElement.requestFullscreen?.();
+        }
+
+        function stopProjection() {
+            document.getElementById('projection-screen').style.display = 'none';
+            if (document.fullscreenElement) document.exitFullscreen?.();
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') stopProjection();
+            if (e.key === 'Enter' && selected.length > 0) startProjection();
+        });
+
+        // Init
+        renderSidebar();
+        renderQuestions();
+    </script>
+</body>
+</html>
