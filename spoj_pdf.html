@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>PDF Merge & Rotate – PRO</title>
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+<style>
+body{margin:0;background:#f4f6f9;font-family:system-ui}
+main{max-width:1000px;margin:30px auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+button,input{padding:6px 12px;border-radius:6px;border:0;font-size:14px}
+button{background:#2563eb;color:#fff;cursor:pointer}
+button.secondary{background:#6b7280}
+.range{display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.page{border:2px solid #ddd;border-radius:6px;padding:6px;text-align:center;font-size:12px;cursor:pointer;background:#fafafa}
+.page.selected{border-color:#2563eb;background:#dbeafe}
+.file{font-size:10px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drag{opacity:.4}
+</style>
+</head>
+
+<body>
+<main>
+<h1>PDF Merge & Rotate – PRO</h1>
+
+<input type="file" id="files" multiple accept="application/pdf">
+
+<div class="toolbar">
+    <button onclick="rotateSelected(90)">↻ +90°</button>
+    <button onclick="rotateSelected(-90)">↺ -90°</button>
+    <button onclick="clearSelection()" class="secondary">Zrušit výběr</button>
+    <button onclick="exportPdf()">Export PDF</button>
+</div>
+
+<div class="range">
+    <b>Hromadný výběr:</b>
+    od <input type="number" id="from" style="width:70px">
+    do <input type="number" id="to" style="width:70px">
+    <button onclick="selectRange()" class="secondary">Vybrat</button>
+</div>
+
+<div id="pages" class="pages"></div>
+</main>
+
+<script>
+let pages=[];
+let dragIndices = [];
+
+document.getElementById('files').addEventListener('change',async e=>{
+    pages=[];
+    const box=document.getElementById('pages');
+    box.innerHTML='';
+
+    for(const file of e.target.files){
+        const buf=await file.arrayBuffer();
+        const pdf=await PDFLib.PDFDocument.load(buf);
+
+        for(let i=0;i<pdf.getPageCount();i++){
+            pages.push({
+                pdf,
+                index:i,
+                rotate:0,
+                file:file.name
+            });
+        }
+    }
+    render();
+});
+
+function render(){
+    const box=document.getElementById('pages');
+    box.innerHTML='';
+
+    pages.forEach((p,i)=>{
+        const d=document.createElement('div');
+        d.className='page';
+        d.draggable=true;
+        d.innerHTML=`<b>${i+1}</b><br>${p.rotate}°<div class="file">${p.file}</div>`;
+
+        d.onclick=()=>d.classList.toggle('selected');
+
+        d.ondragstart = () => {
+
+            const all = [...document.querySelectorAll('.page')];
+
+            const selected = all
+
+                .map((el,idx)=> el.classList.contains('selected') ? idx : -1)
+
+                .filter(i=>i>=0);
+
+
+
+            dragIndices = selected.length ? selected : [i];
+
+
+
+            dragIndices.forEach(idx => all[idx].classList.add('drag'));
+
+        };       
+
+        d.ondragend = () => {
+
+            document.querySelectorAll('.page.drag').forEach(e=>e.classList.remove('drag'));
+
+        };
+
+        d.ondragover = e => e.preventDefault();
+        d.ondrop = () => {
+            if (!dragIndices.length) return;
+
+            const block = dragIndices.map(idx => pages[idx]);
+
+            dragIndices.sort((a,b)=>b-a).forEach(idx => pages.splice(idx,1));
+
+            let insertIndex = i;
+            const removedBefore = dragIndices.filter(idx => idx < i).length;
+            insertIndex -= removedBefore;
+
+            pages.splice(insertIndex, 0, ...block);
+
+            dragIndices = [];
+            render();
+        };
+        box.appendChild(d);
+    });
+}
+
+function rotateSelected(a){
+    document.querySelectorAll('.page.selected').forEach(el=>{
+        const i=[...el.parentNode.children].indexOf(el);
+        pages[i].rotate=(pages[i].rotate+a+360)%360;
+    });
+    render();
+}
+
+function clearSelection(){
+    document.querySelectorAll('.page.selected').forEach(e=>e.classList.remove('selected'));
+}
+
+function selectRange(){
+    const from=parseInt(document.getElementById('from').value)-1;
+    const to=parseInt(document.getElementById('to').value)-1;
+
+    if(isNaN(from)||isNaN(to)) return;
+
+    clearSelection();
+
+    for(let i=Math.max(0,from);i<=Math.min(pages.length-1,to);i++){
+        document.getElementById('pages').children[i].classList.add('selected');
+    }
+}
+
+document.addEventListener('keydown',e=>{
+    if(e.key==='r') rotateSelected(90);
+    if(e.key==='l') rotateSelected(-90);
+    if(e.key==='Escape') clearSelection();
+});
+
+async function exportPdf(){
+    const out=await PDFLib.PDFDocument.create();
+
+    for(const p of pages){
+        const [pg]=await out.copyPages(p.pdf,[p.index]);
+        if(p.rotate) pg.setRotation(PDFLib.degrees(p.rotate));
+        out.addPage(pg);
+    }
+
+    const bytes=await out.save();
+    const blob=new Blob([bytes],{type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='vysledek.pdf';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
