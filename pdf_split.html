@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rozdělit PDF na stránky</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --fg: #e0e0e0;
+      --accent: #bdf;
+      --border: #333;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      margin: 0;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
+
+    #dropzone {
+      border: 2px dashed var(--accent);
+      border-radius: 1rem;
+      padding: 3rem;
+      text-align: center;
+      cursor: pointer;
+      background-color: #1e1e1e;
+      transition: background-color 0.2s ease;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    #dropzone.hover {
+      background-color: #2a2a2a;
+    }
+
+    #status {
+      margin-top: 1.5rem;
+      font-size: 1rem;
+    }
+
+    .progress-container {
+      width: 100%;
+      max-width: 500px;
+      margin-top: 1rem;
+    }
+
+    .progress-item {
+      margin-bottom: 1rem;
+    }
+
+    .progress-label {
+      margin-bottom: 0.3rem;
+      font-size: 0.95rem;
+    }
+
+    .progress-bar {
+      background-color: #2a2a2a;
+      border-radius: 1rem;
+      overflow: hidden;
+      height: 1rem;
+    }
+
+    .progress-fill {
+      background-color: var(--accent);
+      height: 100%;
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>Rozdělit PDF na stránky</h1>
+  <div id="dropzone">
+    Přetáhněte sem PDF soubory nebo klikněte pro výběr
+    <input type="file" id="pdf-upload" accept="application/pdf" multiple style="display: none;" />
+  </div>
+  <div id="status"></div>
+  <div class="progress-container" id="progress-container"></div>
+
+  <script type="module">
+    import { PDFDocument } from 'https://cdn.skypack.dev/pdf-lib';
+
+    const dropzone = document.getElementById('dropzone');
+    const input = document.getElementById('pdf-upload');
+    const status = document.getElementById('status');
+    const progressContainer = document.getElementById('progress-container');
+
+    dropzone.addEventListener('click', () => input.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('hover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('hover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('hover');
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+      if (files.length > 0) {
+        handleMultiple(files);
+      } else {
+        status.textContent = 'Prosím nahrajte PDF soubor(y).';
+      }
+    });
+
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files);
+      if (files.length > 0) handleMultiple(files);
+    });
+
+    async function handleMultiple(files) {
+      status.textContent = `Zpracovávám ${files.length} soubor${files.length === 1 ? '' : 'y'}...`;
+      progressContainer.innerHTML = '';
+
+      for (const file of files) {
+        const label = document.createElement('div');
+        label.className = 'progress-item';
+        const filenameBase = file.name.replace(/\.pdf$/i, '').replace(/\s+/g, '-');
+
+        label.innerHTML = `
+          <div class="progress-label">${filenameBase}</div>
+          <div class="progress-bar">
+            <div class="progress-fill"></div>
+          </div>
+        `;
+
+        const progressFill = label.querySelector('.progress-fill');
+        progressContainer.appendChild(label);
+
+        await handlePDF(file, progress => {
+          progressFill.style.width = `${progress}%`;
+        });
+      }
+
+      status.textContent = 'Hotovo! Všechny stránky byly staženy.';
+    }
+
+    async function handlePDF(file, onProgress) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const originalPdf = await PDFDocument.load(arrayBuffer);
+        const totalPages = originalPdf.getPageCount();
+
+        const filenameBase = file.name.replace(/\.pdf$/i, '').replace(/\s+/g, '-');
+
+        for (let i = 0; i < totalPages; i++) {
+          const newPdf = await PDFDocument.create();
+          const [copiedPage] = await newPdf.copyPages(originalPdf, [i]);
+          newPdf.addPage(copiedPage);
+          const pdfBytes = await newPdf.save();
+
+          const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `${filenameBase}-s${String(i + 1).padStart(2, '0')}.pdf`;
+          link.click();
+
+          onProgress(Math.round(((i + 1) / totalPages) * 100));
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+      } catch (err) {
+        console.error(err);
+        onProgress(0);
+        alert(`Chyba při zpracování souboru ${file.name}`);
+      }
+    }
+  </script>
+</body>
+</html>
