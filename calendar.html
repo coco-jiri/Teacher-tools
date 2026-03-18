@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plánovací Kalendář Učitele - Dark Mode</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --sidebar-bg-color: #252526;
+            --border-color: #383838;
+            --header-bg-color: #2d2d2d;
+            --button-bg-color: #007bff;
+            --button-hover-bg-color: #0056b3;
+            --button-text-color: #ffffff;
+            --input-bg-color: #303030;
+            --input-border-color: #444;
+            --input-text-color: #e0e0e0;
+            --day-cell-bg-color: #2a2a2a;
+            --day-cell-hover-bg-color: #333333;
+            --day-cell-text-color: #c0c0c0;
+            --day-number-color: #d0d0d0;
+            --month-header-color: #909090;
+            --holiday-bg-color: #3a3a3a;
+            --holiday-text-color: #a0a0a0;
+            --current-day-outline-color: #007bff;
+            --selected-day-bg-color: #004080; /* Tmavě modrá pro vybraný den */
+            --selected-day-text-color: #ffffff;
+            --hours-badge-bg-color: rgba(128, 128, 128, 0.2);
+            --hours-badge-text-color: #b0b0b0;
+            --selected-hours-badge-text-color: #ffffff;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        #app-container { display: flex; flex-grow: 1; overflow: hidden; }
+        #calendar-container { flex-grow: 1; overflow-y: auto; padding: 10px; border-right: 1px solid var(--border-color); }
+        #sidebar {
+            width: 300px; padding: 15px; box-sizing: border-box;
+            display: flex; flex-direction: column;
+            background-color: var(--sidebar-bg-color);
+            overflow-y: auto;
+            border-left: 1px solid var(--border-color);
+        }
+        .week-row { display: flex; border-bottom: 1px solid var(--border-color); min-height: 90px; } /* Zvětšená výška řádku */
+        .day-cell {
+            flex: 1;
+            border-right: 1px solid var(--border-color);
+            padding: 8px; /* Upraven padding */
+            position: relative;
+            /*min-width: 90px; /* Upravena minimální šířka */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            background-color: var(--day-cell-bg-color);
+            transition: background-color 0.2s;
+        }
+        .day-cell:hover:not(.holiday):not(.disabled) { background-color: var(--day-cell-hover-bg-color); }
+        .day-cell:last-child { border-right: none; }
+
+        .day-info { text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+        .day-header { /* Měsíc */
+            font-size: 0.9em; /* Zvětšeno */
+            color: var(--month-header-color);
+            margin-bottom: 4px;
+        }
+        .day-number { /* Číslo dne */
+            font-size: 1.6em; /* Výrazně zvětšeno */
+            font-weight: bold;
+            color: var(--day-number-color);
+            line-height: 1.1;
+        }
+        .hours-badge-container {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+        }
+        .hours-badge { /* Počet hodin */
+            font-size: 0.85em; /* Menší než den */
+            font-weight: bold;
+            color: var(--hours-badge-text-color);
+            background-color: var(--hours-badge-bg-color);
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        .day-cell.selected {
+            background-color: var(--selected-day-bg-color) !important; /* Důležité pro přebití hover */
+            color: var(--selected-day-text-color);
+        }
+        .day-cell.selected .day-number,
+        .day-cell.selected .day-header {
+            color: var(--selected-day-text-color);
+        }
+        .day-cell.selected .hours-badge {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--selected-hours-badge-text-color);
+        }
+
+        .day-cell.holiday {
+            background-color: var(--holiday-bg-color);
+            color: var(--holiday-text-color);
+            cursor: default;
+        }
+        .day-cell.holiday .day-number,
+        .day-cell.holiday .day-header {
+            color: var(--holiday-text-color);
+        }
+        .day-cell.disabled { background-color: var(--bg-color); cursor: default; opacity: 0.6; }
+        .day-cell.disabled .day-number, .day-cell.disabled .day-header { opacity: 0.7; }
+
+
+        .day-cell.current-day .day-number {
+             outline: 2px solid var(--current-day-outline-color);
+             border-radius: 50%;
+             width: 30px; /* Upraveno pro větší číslo dne */
+             height: 30px; /* Upraveno pro větší číslo dne */
+             display: inline-flex;
+             align-items: center;
+             justify-content: center;
+             color: var(--current-day-outline-color); /* Zvýraznění textu aktuálního dne */
+        }
+         .day-cell.current-day.selected .day-number {
+            color: var(--selected-day-text-color); /* Aby zůstalo čitelné na tmavém pozadí vybraného dne */
+        }
+
+
+        .current-week { background-color: rgba(0, 123, 255, 0.1); /* Jemné zvýraznění aktuálního týdne */ }
+
+        #week-header {
+            display: flex;
+            background-color: var(--header-bg-color);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0; z-index: 10;
+        }
+        .week-header-cell { flex: 1; padding: 8px; text-align: center; font-weight: bold; font-size: 0.8em;}
+
+        .sidebar-section { margin-bottom: 20px; }
+        .sidebar-section h3 { margin-top: 0; font-size: 1.1em; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;}
+        .sidebar-section label { display: block; margin-bottom: 5px; font-size: 0.9em; }
+        .sidebar-section input[type="text"], .sidebar-section input[type="number"] {
+            width: calc(100% - 12px); padding: 8px; margin-bottom: 10px;
+            border: 1px solid var(--input-border-color); border-radius: 4px;
+            background-color: var(--input-bg-color); color: var(--input-text-color);
+        }
+        .sidebar-section button, label[for="load-data-input"] {
+            padding: 8px 12px; background-color: var(--button-bg-color); color: var(--button-text-color);
+            border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; margin-right: 5px; margin-bottom: 5px;
+        }
+        .sidebar-section button:hover, label[for="load-data-input"]:hover { background-color: var(--button-hover-bg-color); }
+        .summary-item { font-size: 0.95em; margin-bottom: 8px; }
+        #subject-list-container { max-height: 200px; overflow-y: auto; border: 1px solid var(--input-border-color); padding: 5px; margin-top:10px; background-color: var(--input-bg-color);}
+        .subject-list-item { padding: 8px; cursor: pointer; border-bottom: 1px solid var(--border-color); font-size: 0.9em;}
+        .subject-list-item:hover { background-color: var(--day-cell-hover-bg-color); }
+        .subject-list-item.active-subject { background-color: var(--button-bg-color); color: var(--button-text-color); }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <div id="sidebar">
+            <div class="sidebar-section">
+                <h3>Správa Dat</h3>
+                <button id="save-data">Uložit všechna data (data.json)</button>
+                <label for="load-data-input">Načíst data</label>
+                <input type="file" id="load-data-input" accept=".json" style="display: none;">
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Předmět</h3>
+                <label for="subject-name">Název předmětu:</label>
+                <input type="text" id="subject-name" placeholder="Např. Matematika C3B">
+                 <button id="clear-current-subject-selection">Vyčistit aktuální výběr</button>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Přehled aktuálního předmětu</h3>
+                <div class="summary-item" id="current-subject-name-summary">Předmět: -</div>
+                <div class="summary-item" id="current-selection-summary">Naplánováno hodin: 0</div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Načtené předměty</h3>
+                <div id="subject-list-container">
+                    <p style="padding:5px;">Žádná data nebyla načtena nebo uložena.</p>
+                </div>
+                 <button id="delete-subject" style="background-color: #dc3545; margin-top:10px;">Smazat vybraný předmět</button>
+            </div>
+        </div>
+        <div id="calendar-container">
+            <div id="week-header">
+                <div class="week-header-cell">Po</div>
+                <div class="week-header-cell">Út</div>
+                <div class="week-header-cell">St</div>
+                <div class="week-header-cell">Čt</div>
+                <div class="week-header-cell">Pá</div>
+                <div class="week-header-cell">So</div>
+                <div class="week-header-cell">Ne</div>
+            </div>
+            <div id="calendar-grid">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const calendarGrid = document.getElementById('calendar-grid');
+        const subjectNameInput = document.getElementById('subject-name');
+        const currentSubjectNameSummary = document.getElementById('current-subject-name-summary');
+        const currentSelectionSummary = document.getElementById('current-selection-summary');
+
+        const saveDataButton = document.getElementById('save-data');
+        const loadDataInput = document.getElementById('load-data-input');
+        const subjectListContainer = document.getElementById('subject-list-container');
+        const clearCurrentSubjectSelectionButton = document.getElementById('clear-current-subject-selection');
+        const deleteSubjectButton = document.getElementById('delete-subject');
+
+
+        let currentSchoolYearStart, currentSchoolYearEnd;
+        let allSubjectsData = []; // [{ subjectName: "", plannedLessons: [{ date: "YYYY-MM-DD", hours: N }] }]
+        let currentSubjectPlannedLessons = {}; // { "YYYY-MM-DD": hours } - for current interaction, before saving
+        let activeSubjectName = null; // Stores the name of the subject being edited
+
+        const publicHolidays = {
+            "2024": ["2024-01-01", "2024-03-29", "2024-04-01", "2024-05-01", "2024-05-08", "2024-07-05", "2024-07-06", "2024-09-28", "2024-10-28", "2024-11-17", "2024-12-24", "2024-12-25", "2024-12-26"],
+            "2025": ["2025-01-01", "2025-04-18", "2025-04-21", "2025-05-01", "2025-05-08", "2025-07-05", "2025-07-06", "2025-09-28", "2025-10-28", "2025-11-17", "2025-12-24", "2025-12-25", "2025-12-26"],
+            "2026": ["2026-01-01", "2026-04-03", "2026-04-06", "2026-05-01", "2026-05-08", "2026-07-05", "2026-07-06", "2026-09-28", "2026-10-28", "2026-11-17", "2026-12-24", "2026-12-25", "2026-12-26"]
+        };
+        const schoolHolidays = { // Data pro školní rok 2024/2025 a 2025/2026
+            "2024-2025": [
+                { name: "Podzimní prázdniny", start: "2024-10-29", end: "2024-10-30" },
+                { name: "Vánoční prázdniny", start: "2024-12-21", end: "2025-01-05" },
+                { name: "Pololetní prázdniny", start: "2025-01-31", end: "2025-01-31" },
+                { name: "Jarní prázdniny (obecně)", start: "2025-02-03", end: "2025-03-16" },
+                { name: "Velikonoční prázdniny", start: "2025-04-17", end: "2025-04-17" },
+                { name: "Letní prázdniny", start: "2025-07-01", end: "2025-08-31" }
+            ],
+            "2025-2026": [
+                { name: "Podzimní prázdniny", start: "2025-10-27", end: "2025-10-29" },
+                { name: "Vánoční prázdniny", start: "2025-12-22", end: "2026-01-04" },
+                { name: "Pololetní prázdniny", start: "2026-01-30", end: "2026-01-30" },
+                { name: "Jarní prázdniny (obecně)", start: "2026-02-02", end: "2026-03-15" },
+                { name: "Velikonoční prázdniny", start: "2026-04-02", end: "2026-04-02" },
+                { name: "Letní prázdniny", start: "2026-07-01", end: "2026-08-31" }
+            ]
+        };
+
+        function getSchoolYearKey(year) { return `${year}-${year + 1}`; }
+
+        function isHoliday(date) {
+            const dateString = date.toISOString().split('T')[0];
+            const year = date.getFullYear().toString();
+            if (publicHolidays[year] && publicHolidays[year].includes(dateString)) return true;
+            const schoolYearString = (date.getMonth() >= 8) ? getSchoolYearKey(date.getFullYear()) : getSchoolYearKey(date.getFullYear() - 1);
+            if (schoolHolidays[schoolYearString]) {
+                for (const holiday of schoolHolidays[schoolYearString]) {
+                    const startDate = new Date(holiday.start + "T00:00:00Z");
+                    const endDate = new Date(holiday.end + "T23:59:59Z");
+                    if (date >= startDate && date <= endDate) return true;
+                }
+            }
+            return false;
+        }
+
+        function setSchoolYearDates() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            if (currentMonth >= 8) {
+                currentSchoolYearStart = new Date(Date.UTC(currentYear, 8, 1));
+                currentSchoolYearEnd = new Date(Date.UTC(currentYear + 1, 7, 31, 23, 59, 59, 999));
+            } else {
+                currentSchoolYearStart = new Date(Date.UTC(currentYear - 1, 8, 1));
+                currentSchoolYearEnd = new Date(Date.UTC(currentYear, 7, 31, 23, 59, 59, 999));
+            }
+        }
+
+        function getISODateString(date) { return date.toISOString().split('T')[0]; }
+
+        function renderCalendar() {
+            calendarGrid.innerHTML = '';
+            let currentDateIterator = new Date(currentSchoolYearStart);
+            let dayOfWeek = currentDateIterator.getUTCDay();
+            let diffToMonday = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
+            currentDateIterator.setUTCDate(currentDateIterator.getUTCDate() + diffToMonday);
+
+            const today = new Date();
+            const todayString = getISODateString(new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())));
+            let currentWeekElement = null;
+
+            while (currentDateIterator <= currentSchoolYearEnd || currentDateIterator.getUTCDay() !== 1) {
+                if (currentDateIterator.getUTCDay() === 1 && currentDateIterator > currentSchoolYearEnd && new Date(Date.UTC(currentDateIterator.getUTCFullYear(), currentDateIterator.getUTCMonth(), currentDateIterator.getUTCDate()-7)) > currentSchoolYearEnd) {
+                    break;
+                }
+                const weekRow = document.createElement('div');
+                weekRow.classList.add('week-row');
+                const weekStartDate = new Date(currentDateIterator);
+                let isThisCurrentWeek = false;
+
+                for (let i = 0; i < 7; i++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.classList.add('day-cell');
+                    const localDateForDisplay = new Date(currentDateIterator.getTime()); // Pro zobrazení v lokálním čase
+                    const dateString = getISODateString(currentDateIterator); // Pro data používáme UTC string
+                    dayCell.dataset.date = dateString;
+
+                    const dayInfo = document.createElement('div');
+                    dayInfo.classList.add('day-info');
+
+                    const dayHeader = document.createElement('div');
+                    dayHeader.classList.add('day-header');
+                    if (i === 0 || localDateForDisplay.getDate() === 1) {
+                         dayHeader.textContent = `${localDateForDisplay.toLocaleDateString('cs-CZ', { month: 'short' })}`;
+                    }
+
+                    const dayNumber = document.createElement('div');
+                    dayNumber.classList.add('day-number');
+                    dayNumber.textContent = localDateForDisplay.getDate();
+                    
+                    dayInfo.appendChild(dayHeader);
+                    dayInfo.appendChild(dayNumber);
+                    dayCell.appendChild(dayInfo);
+
+                    const hoursBadgeContainer = document.createElement('div');
+                    hoursBadgeContainer.classList.add('hours-badge-container');
+                    const hoursBadge = document.createElement('span');
+                    hoursBadge.classList.add('hours-badge');
+                    hoursBadge.textContent = '0';
+                    hoursBadgeContainer.appendChild(hoursBadge);
+                    dayCell.appendChild(hoursBadgeContainer);
+
+                    if (currentDateIterator >= currentSchoolYearStart && currentDateIterator <= currentSchoolYearEnd) {
+                        if (isHoliday(currentDateIterator)) {
+                            dayCell.classList.add('holiday');
+                        } else {
+                            dayCell.addEventListener('click', handleDayClick);
+                            dayCell.addEventListener('contextmenu', handleDayRightClick);
+                        }
+                        if (dateString === todayString) {
+                            dayCell.classList.add('current-day');
+                            isThisCurrentWeek = true;
+                        }
+                        if (currentSubjectPlannedLessons[dateString]) {
+                            hoursBadge.textContent = currentSubjectPlannedLessons[dateString];
+                            if(currentSubjectPlannedLessons[dateString] > 0) dayCell.classList.add('selected');
+                        }
+                    } else {
+                        dayCell.classList.add('disabled');
+                    }
+                    
+                    weekRow.appendChild(dayCell);
+                    currentDateIterator.setUTCDate(currentDateIterator.getUTCDate() + 1);
+                }
+                
+                const weekId = `week-${getISODateString(weekStartDate)}`;
+                weekRow.id = weekId;
+                if (isThisCurrentWeek) {
+                    weekRow.classList.add('current-week');
+                    currentWeekElement = weekRow;
+                }
+                calendarGrid.appendChild(weekRow);
+                 if (currentDateIterator > currentSchoolYearEnd && currentDateIterator.getUTCDay() === 1) break;
+            }
+
+            if (currentWeekElement) {
+                currentWeekElement.scrollIntoView({ behavior: 'auto', block: 'center' });
+            } else {
+                const firstDayOfSchoolYear = new Date(currentSchoolYearStart);
+                let dayOfWeekAdjust = firstDayOfSchoolYear.getUTCDay();
+                let diffToMon = (dayOfWeekAdjust === 0) ? -6 : 1 - dayOfWeekAdjust;
+                firstDayOfSchoolYear.setUTCDate(firstDayOfSchoolYear.getUTCDate() + diffToMon);
+                const firstWeekId = `week-${getISODateString(firstDayOfSchoolYear)}`;
+
+                const firstWeekElem = document.getElementById(firstWeekId);
+                if (firstWeekElem) {
+                     firstWeekElem.scrollIntoView({ behavior: 'auto', block: 'start' });
+                }
+            }
+            updateSummary();
+        }
+
+        function handleDayClick(event) {
+            event.preventDefault();
+            const dayCell = event.currentTarget;
+            if (dayCell.classList.contains('holiday') || dayCell.classList.contains('disabled')) return;
+            const date = dayCell.dataset.date;
+            let hours = currentSubjectPlannedLessons[date] || 0;
+            hours++;
+            currentSubjectPlannedLessons[date] = hours;
+            updateDayCellDisplay(dayCell, hours);
+            updateSummary();
+        }
+
+        function handleDayRightClick(event) {
+            event.preventDefault();
+            const dayCell = event.currentTarget;
+            if (dayCell.classList.contains('holiday') || dayCell.classList.contains('disabled')) return;
+            const date = dayCell.dataset.date;
+            let hours = currentSubjectPlannedLessons[date] || 0;
+            if (hours > 0) {
+                hours--;
+                if (hours === 0) delete currentSubjectPlannedLessons[date];
+                else currentSubjectPlannedLessons[date] = hours;
+            }
+            updateDayCellDisplay(dayCell, hours);
+            updateSummary();
+        }
+        
+        function updateDayCellDisplay(dayCell, hours) {
+            const hoursBadge = dayCell.querySelector('.hours-badge');
+            if (hoursBadge) hoursBadge.textContent = hours;
+            if (hours > 0) dayCell.classList.add('selected');
+            else dayCell.classList.remove('selected');
+        }
+
+        function updateSummary() {
+            let currentSelectionHours = 0;
+            for (const date in currentSubjectPlannedLessons) {
+                currentSelectionHours += currentSubjectPlannedLessons[date];
+            }
+            const subjName = subjectNameInput.value.trim() || (activeSubjectName ? activeSubjectName : '-');
+            currentSubjectNameSummary.textContent = `Předmět: ${subjName}`;
+            currentSelectionSummary.textContent = `Naplánováno hodin: ${currentSelectionHours}`;
+        }
+        
+        subjectNameInput.addEventListener('input', updateSummary);
+
+        clearCurrentSubjectSelectionButton.addEventListener('click', () => {
+            currentSubjectPlannedLessons = {};
+            activeSubjectName = null;
+            subjectNameInput.value = '';
+            renderCalendar();
+            updateSummary();
+            updateSubjectList();
+        });
+
+        function loadSubjectForEditing(subjectName) {
+            const subjectData = allSubjectsData.find(s => s.subjectName === subjectName);
+            if (!subjectData) return;
+            activeSubjectName = subjectData.subjectName;
+            subjectNameInput.value = subjectData.subjectName;
+            currentSubjectPlannedLessons = {};
+            subjectData.plannedLessons.forEach(lesson => {
+                currentSubjectPlannedLessons[lesson.date] = lesson.hours;
+            });
+            renderCalendar();
+            updateSummary();
+            updateSubjectList();
+        }
+
+        function updateSubjectList() {
+            subjectListContainer.innerHTML = '';
+            if (allSubjectsData.length === 0) {
+                subjectListContainer.innerHTML = '<p style="padding:5px;">Žádná data nebyla načtena nebo uložena.</p>';
+                return;
+            }
+            allSubjectsData.forEach(subject => {
+                const item = document.createElement('div');
+                item.classList.add('subject-list-item');
+                const plannedHoursSum = subject.plannedLessons.reduce((s,l)=>s+l.hours,0);
+                item.textContent = `${subject.subjectName} (${plannedHoursSum}h)`;
+                if (subject.subjectName === activeSubjectName) {
+                    item.classList.add('active-subject');
+                }
+                item.addEventListener('click', () => loadSubjectForEditing(subject.subjectName));
+                subjectListContainer.appendChild(item);
+            });
+        }
+
+        saveDataButton.addEventListener('click', () => {
+            const currentSubjName = subjectNameInput.value.trim();
+            if (!currentSubjName) {
+                alert("Prosím, zadejte název předmětu."); return;
+            }
+            const lessonsToSave = [];
+            for (const date in currentSubjectPlannedLessons) {
+                if (currentSubjectPlannedLessons[date] > 0) {
+                    lessonsToSave.push({ date: date, hours: currentSubjectPlannedLessons[date] });
+                }
+            }
+            const existingSubjectIndex = allSubjectsData.findIndex(s => s.subjectName === currentSubjName);
+            if (existingSubjectIndex > -1) {
+                allSubjectsData[existingSubjectIndex].plannedLessons = lessonsToSave;
+            } else {
+                allSubjectsData.push({ subjectName: currentSubjName, plannedLessons: lessonsToSave });
+            }
+            activeSubjectName = currentSubjName;
+            const jsonData = JSON.stringify(allSubjectsData, null, 2);
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'data.json';
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+            alert('Data byla uložena!');
+            updateSubjectList(); updateSummary();
+        });
+
+        loadDataInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const loadedData = JSON.parse(e.target.result);
+                        if (Array.isArray(loadedData)) {
+                            allSubjectsData = loadedData.map(s => ({ // Ensure only expected fields
+                                subjectName: s.subjectName,
+                                plannedLessons: s.plannedLessons || []
+                            }));
+                            activeSubjectName = null; currentSubjectPlannedLessons = {};
+                            subjectNameInput.value = '';
+                            renderCalendar(); updateSubjectList(); updateSummary();
+                            alert('Data byla úspěšně načtena!');
+                        } else { alert('Chybný formát souboru.'); }
+                    } catch (error) { alert('Chyba při čtení souboru: ' + error.message); }
+                    finally { loadDataInput.value = null; }
+                };
+                reader.readAsText(file);
+            }
+        });
+        
+        deleteSubjectButton.addEventListener('click', () => {
+            const subjectNameToDelete = activeSubjectName || subjectNameInput.value.trim();
+            if (!subjectNameToDelete) {
+                alert("Nejprve vyberte předmět ze seznamu nebo zadejte jeho název."); return;
+            }
+            if (confirm(`Opravdu chcete smazat předmět "${subjectNameToDelete}" a všechna jeho naplánovaná data?`)) {
+                allSubjectsData = allSubjectsData.filter(s => s.subjectName !== subjectNameToDelete);
+                if(activeSubjectName === subjectNameToDelete) activeSubjectName = null;
+                if(subjectNameInput.value === subjectNameToDelete) {
+                    subjectNameInput.value = '';
+                    currentSubjectPlannedLessons = {};
+                }
+                renderCalendar(); updateSubjectList(); updateSummary();
+                alert(`Předmět "${subjectNameToDelete}" byl smazán z aktuální relace. Pro trvalé smazání uložte data.`);
+            }
+        });
+
+        setSchoolYearDates();
+        renderCalendar();
+        updateSubjectList();
+        updateSummary();
+    </script>
+</body>
+</html>
